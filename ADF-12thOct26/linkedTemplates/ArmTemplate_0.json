@@ -15,18 +15,6 @@
 			"type": "string",
 			"defaultValue": "https://HospitalSecreates.vault.azure.net/"
 		},
-		"LS_postgresql_properties_typeProperties_server": {
-			"type": "string",
-			"defaultValue": "ep-dry-cell-a1l6x6ro-pooler.ap-southeast-1.aws.neon.tech"
-		},
-		"LS_postgresql_properties_typeProperties_database": {
-			"type": "string",
-			"defaultValue": "neondb"
-		},
-		"LS_postgresql_properties_typeProperties_username": {
-			"type": "string",
-			"defaultValue": "neondb_owner"
-		},
 		"LS_AzureSqlDatabase_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "dhanman.database.windows.net"
@@ -38,6 +26,18 @@
 		"LS_AzureSqlDatabase_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "dhanman"
+		},
+		"LS_postgresql_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "ep-dry-cell-a1l6x6ro-pooler.ap-southeast-1.aws.neon.tech"
+		},
+		"LS_postgresql_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "neondb"
+		},
+		"LS_postgresql_properties_typeProperties_username": {
+			"type": "string",
+			"defaultValue": "neondb_owner"
 		}
 	},
 	"variables": {
@@ -67,18 +67,6 @@
 				"typeProperties": {
 					"baseUrl": "[parameters('LS_keyvault_properties_typeProperties_baseUrl')]"
 				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"annotations": []
 			},
 			"dependsOn": []
 		},
@@ -122,34 +110,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/LS_postgresql')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "PostgreSqlV2",
-				"typeProperties": {
-					"server": "[parameters('LS_postgresql_properties_typeProperties_server')]",
-					"port": 5432,
-					"database": "[parameters('LS_postgresql_properties_typeProperties_database')]",
-					"username": "[parameters('LS_postgresql_properties_typeProperties_username')]",
-					"password": {
-						"type": "AzureKeyVaultSecret",
-						"store": {
-							"referenceName": "LS_keyvault",
-							"type": "LinkedServiceReference"
-						},
-						"secretName": "postgresql-password"
-					},
-					"sslMode": 2,
-					"authenticationType": "Basic"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_keyvault')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/LS_AzureSqlDatabase')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -178,6 +138,52 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/LS_postgresql')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "PostgreSqlV2",
+				"typeProperties": {
+					"server": "[parameters('LS_postgresql_properties_typeProperties_server')]",
+					"port": 5432,
+					"database": "[parameters('LS_postgresql_properties_typeProperties_database')]",
+					"username": "[parameters('LS_postgresql_properties_typeProperties_username')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_keyvault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "postgresql-password"
+					},
+					"sslMode": 2,
+					"authenticationType": "Basic"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_keyvault')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlTable1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSqlDatabase",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_AzureSqlDatabase')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/DS_postgresql')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -193,6 +199,105 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_postgresql')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_SOURCE_TO_SILVER_MAIN')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Read source table list",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "select table_id from ctrl.table_config \nwhere is_active = 1\nand source_system = '@{pipeline().parameters.source_system}'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "AzureSqlTable1",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ingest all tables",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Read source table list",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Read source table list').output.value",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Set variable1",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "new_test",
+										"value": {
+											"value": "@item().table_id",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"source_system": {
+						"type": "string",
+						"defaultValue": "neon_postgres"
+					}
+				},
+				"variables": {
+					"test": {
+						"type": "Integer"
+					},
+					"new_test": {
+						"type": "Integer"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/AzureSqlTable1')]"
 			]
 		},
 		{

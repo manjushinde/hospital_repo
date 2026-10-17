@@ -8,6 +8,15 @@
 		"LS_ADLS_properties_typeProperties_url": {
 			"value": "https://hospitalssa15thoct26.dfs.core.windows.net/"
 		},
+		"LS_AzureSqlDatabase_properties_typeProperties_server": {
+			"value": "dhanman.database.windows.net"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_database": {
+			"value": "first_db_17thOct"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_userName": {
+			"value": "dhanman"
+		},
 		"LS_keyvault_properties_typeProperties_baseUrl": {
 			"value": "https://HospitalSecreates.vault.azure.net/"
 		},
@@ -19,15 +28,6 @@
 		},
 		"LS_postgresql_properties_typeProperties_username": {
 			"value": "neondb_owner"
-		},
-		"LS_AzureSqlDatabase_properties_typeProperties_server": {
-			"value": "dhanman.database.windows.net"
-		},
-		"LS_AzureSqlDatabase_properties_typeProperties_database": {
-			"value": "first_db_17thOct"
-		},
-		"LS_AzureSqlDatabase_properties_typeProperties_userName": {
-			"value": "dhanman"
 		},
 		"containerUri": {
 			"value": ""
