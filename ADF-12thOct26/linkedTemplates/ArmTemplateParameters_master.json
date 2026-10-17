@@ -20,6 +20,15 @@
 		"LS_postgresql_properties_typeProperties_username": {
 			"value": "neondb_owner"
 		},
+		"LS_AzureSqlDatabase_properties_typeProperties_server": {
+			"value": "dhanman.database.windows.net"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_database": {
+			"value": "first_db_17thOct"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_userName": {
+			"value": "dhanman"
+		},
 		"containerUri": {
 			"value": ""
 		},
